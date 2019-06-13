@@ -1,0 +1,32 @@
+﻿@page "/"
+@inherits AuthorizeComponent
+@using System.Collections.Generic;
+@using System.Linq;
+@using Sdk;
+
+<h1>Chaim Holdings</h1>
+
+<h3>Properties for sale:</h3>
+
+<ul>
+    @foreach(var property in Properties)
+    {
+        <li>@property</li>
+    }
+</ul>
+
+@functions
+{
+    protected IEnumerable<string> Properties { get; set; } = new List<string>();
+
+    protected override async Task OnInitAsync()
+    {
+        await base.OnInitAsync();
+
+        var properties = await ChaimHoldings.Property.ListAsync();
+        Properties = properties.Select(x => x.Name);
+    }
+
+    [Inject]
+    private IChaimHoldings ChaimHoldings { get; set; }
+}

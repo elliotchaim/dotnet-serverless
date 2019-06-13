@@ -1,0 +1,38 @@
+﻿@page "/signin"
+@using IdentityModel.Client;
+@using Context;
+
+<h1>Redirecting...</h1>
+
+@functions
+{
+    protected override async Task OnInitAsync()
+    {
+        var discoveryResponse = await DiscoveryCache.GetAsync();
+
+        var requestUrl = new RequestUrl(discoveryResponse.AuthorizeEndpoint);
+
+        await LocalStorage.SetItemAsync("code_challenge", $"{Guid.NewGuid()}-{Guid.NewGuid()}");
+
+        var authorizeUrl = requestUrl.CreateAuthorizeUrl
+        (
+            clientId: "spa_client",
+            scope: "chaim_holdings openid profile email",
+            redirectUri: UriHelper.ToAbsoluteUri("/signin-oidc").ToString(),
+            responseType: "code",
+            codeChallenge: await LocalStorage.GetItemAsync("code_challenge"),
+            codeChallengeMethod: "plain"
+        );
+
+        UriHelper.NavigateTo(authorizeUrl);
+    }
+
+    [Inject]
+    private DiscoveryCache DiscoveryCache { get; set; }
+
+    [Inject]
+    private IUriHelper UriHelper { get; set; }
+
+    [Inject]
+    private ILocalStorage LocalStorage { get; set; }
+}

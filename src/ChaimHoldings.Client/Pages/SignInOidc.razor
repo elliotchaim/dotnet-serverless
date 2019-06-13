@@ -1,0 +1,41 @@
+﻿@page "/signin-oidc"
+@using Microsoft.AspNetCore.WebUtilities;
+@using IdentityModel.Client;
+@using Context;
+
+@functions
+{
+    protected override async Task OnInitAsync()
+    {
+        var queryStringValues = QueryHelpers.ParseQuery(new Uri(UriHelper.GetAbsoluteUri()).Query);
+        var authorizationCode = queryStringValues.TryGetValue("code", out var type) ? type.First() : "";
+
+        var discoveryResponse = await DiscoveryCache.GetAsync();
+        var tokenResponse = await HttpClient.RequestAuthorizationCodeTokenAsync(new AuthorizationCodeTokenRequest
+        {
+            Address = discoveryResponse.TokenEndpoint,
+            ClientId = "spa_client",
+            ClientSecret = "secret",
+            Code = authorizationCode,
+            RedirectUri = new Uri(UriHelper.GetAbsoluteUri()).GetLeftPart(UriPartial.Path),
+            CodeVerifier = await LocalStorage.GetItemAsync("code_challenge")
+        });
+
+        await LocalStorage.SetItemAsync("access_token", tokenResponse.AccessToken);
+
+        // todo: use redirect url from state
+        UriHelper.NavigateTo("/");
+    }
+
+    [Inject]
+    private DiscoveryCache DiscoveryCache { get; set; }
+
+    [Inject]
+    private HttpClient HttpClient { get; set; }
+
+    [Inject]
+    private IUriHelper UriHelper { get; set; }
+
+    [Inject]
+    private ILocalStorage LocalStorage { get; set; }
+}
